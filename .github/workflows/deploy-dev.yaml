@@ -54,13 +54,29 @@ jobs:
 
       - name: Deploy to Lambda
         run: |
-          aws lambda update-function-code \
-            --function-name templateengine-dev \
-            --zip-file fileb://deployment.zip \
-            --region us-east-1
+          if aws lambda get-function --function-name templateengine-dev --region us-east-1 2>/dev/null; then
+            echo "Function exists, updating code..."
+            aws lambda update-function-code \
+              --function-name templateengine-dev \
+              --zip-file fileb://deployment.zip \
+              --region us-east-1
+          else
+            echo "Function does not exist, creating..."
+            aws lambda create-function \
+              --function-name templateengine-dev \
+              --runtime dotnet8 \
+              --role arn:aws:iam::428021717924:role/algoxera-lambda-Dev-role \
+              --handler AlgoXera.Lambda.TemplateEngine::AlgoXera.Lambda.TemplateEngine.Function::FunctionHandler \
+              --zip-file fileb://deployment.zip \
+              --timeout 30 \
+              --memory-size 512 \
+              --region us-east-1
+          fi
 
       - name: Update Lambda configuration
         run: |
+          echo "Waiting for function to be ready..."
+          aws lambda wait function-updated --function-name templateengine-dev --region us-east-1
           aws lambda update-function-configuration \
             --function-name templateengine-dev \
             --environment "Variables={AI_PROVIDER=${{ secrets.AI_PROVIDER }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GEMINI_MODEL=${{ secrets.GEMINI_MODEL }},BEDROCK_PROMPT_ARN=${{ secrets.BEDROCK_PROMPT_ARN }}}" \

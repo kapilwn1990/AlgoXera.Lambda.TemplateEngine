@@ -17,6 +17,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.7.*" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="AlgoXera.Lambda.Shared" Version="1.0.0" />
+    <PackageReference Include="AlgoXera.Lambda.SubscriptionShared" Version="1.0.0" />
   </ItemGroup>
 </Project>
 

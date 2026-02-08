@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Artha.AI TemplateEngine Lambda - Trading strategy template management with AI generation
+
+Parameters:
+  DatabaseConnectionString:
+    Type: String
+    Description: Aurora Postgres DSQL connection string
+    NoEcho: true
+  
+  JwtSecret:
+    Type: String
+    Description: JWT secret for token validation
+    NoEcho: true
+  
+  JwtIssuer:
+    Type: String
+    Description: JWT issuer
+    Default: artha-api
+  
+  JwtAudience:
+    Type: String
+    Description: JWT audience
+    Default: artha-client
+  
+  GeminiApiKey:
+    Type: String
+    Description: Google Gemini API key for AI template generation
+    NoEcho: true
+
+Resources:
+  # API Gateway for Template endpoints
+  TemplateApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Description: Template Management API
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # Template Engine Lambda
+  TemplateEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: AlgoXera.Lambda.TemplateEngine::AlgoXera.Lambda.TemplateEngine.Function::FunctionHandler
+      Runtime: dotnet8
+      Description: Template management with AI-powered generation
+      Timeout: 60
+      MemorySize: 1024
+      Environment:
+        Variables:
+          DATABASE_CONNECTION_STRING: !Ref DatabaseConnectionString
+          JWT_SECRET: !Ref JwtSecret
+          JWT_ISSUER: !Ref JwtIssuer
+          JWT_AUDIENCE: !Ref JwtAudience
+          GEMINI_API_KEY: !Ref GeminiApiKey
+      Events:
+        GetTemplates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates
+            Method: get
+        CreateTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates
+            Method: post
+        GetTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates/{id}
+            Method: get
+        UpdateTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates/{id}
+            Method: put
+        DeleteTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates/{id}
+            Method: delete
+        GenerateTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TemplateApi
+            Path: /api/templates/generate
+            Method: post
+
+Outputs:
+  TemplateApiUrl:
+    Description: API Gateway endpoint URL for Templates
+    Value: !Sub 'https://${TemplateApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  TemplateEngineFunctionArn:
+    Description: Template Engine Lambda Function ARN
+    Value: !GetAtt TemplateEngineFunction.Arn
+  
+  TemplateEngineFunctionName:
+    Description: Template Engine Lambda Function Name
+    Value: !Ref TemplateEngineFunction
+
